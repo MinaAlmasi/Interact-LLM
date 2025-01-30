@@ -1,0 +1,16 @@
+[project]
+name = "interact-llm"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "MinaAlmasi" }
+]
+requires-python = ">=3.12.3"
+dependencies = [
+    "typer>=0.15.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
