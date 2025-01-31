@@ -7,6 +7,7 @@ from textual.app import App, ComposeResult
 from textual.widgets import Input, Header, Markdown, Footer
 from textual.containers import VerticalScroll
 
+
 def get_response():
     """
     dummy fn
@@ -48,8 +49,8 @@ class ChatApp(App):
     def compose(self) -> ComposeResult:
         yield Header()
         with VerticalScroll(id="chat-view"):
-                yield Response("Hola quieres practicar conmigo?")
-        yield Input(placeholder="Escribe tu mensaje aqui")
+                yield Response("¿Hola quieres practicar conmigo?")
+        yield Input(placeholder="Escribe tu mensaje aquí")
         yield Footer()
 
     @on(Input.Submitted)
