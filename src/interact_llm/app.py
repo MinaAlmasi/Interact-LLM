@@ -4,6 +4,7 @@ https://textual.textualize.io/blog/2024/09/15/anatomy-of-a-textual-user-interfac
 """
 
 from interfaces.base_hf import ChatHF
+from interfaces.chat import ChatMessage
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll
@@ -81,9 +82,10 @@ class ChatApp(App):
     @work(thread=True)
     def send_prompt(self, prompt: str, response: Response) -> None:
         response_content = ""
-        llm_response = self.model.generate(prompt)
+        chat_messages = [ChatMessage(role="user", content=prompt)]
+        llm_response = self.model.generate(chat_messages)
         
-        for chunk in llm_response:
+        for chunk in llm_response.content:
             response_content += chunk  # add words in a "stream-like" way
             self.call_from_thread(response.update, response_content)
 
