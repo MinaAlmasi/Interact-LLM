@@ -13,7 +13,7 @@ from transformers.utils.logging import disable_progress_bar
 disable_progress_bar()
 
 # temp
-MODEL_ID = "microsoft/Phi-3.5-mini-instruct"
+MODEL_ID = "BSC-LT/salamandra-2b-instruct"
 
 
 def get_response():
@@ -59,7 +59,8 @@ class ChatApp(App):
     """
 
     def on_mount(self) -> None:
-        self.model = ChatHF(model_id=MODEL_ID).load()
+        self.model = ChatHF(model_id=MODEL_ID)
+        self.model.load()
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -80,7 +81,8 @@ class ChatApp(App):
     @work(thread=True)
     def send_prompt(self, prompt: str, response: Response) -> None:
         response_content = ""
-        llm_response = get_response()
+        llm_response = self.model.generate(prompt)
+        
         for chunk in llm_response:
             response_content += chunk  # add words in a "stream-like" way
             self.call_from_thread(response.update, response_content)
