@@ -1,11 +1,19 @@
 """
-Currently heavily based on 
-https://textual.textualize.io/blog/2024/09/15/anatomy-of-a-textual-user-interface/#were-in-the-pipe-five-by-five 
+Currently heavily based on
+https://textual.textualize.io/blog/2024/09/15/anatomy-of-a-textual-user-interface/#were-in-the-pipe-five-by-five
 """
+
+from interfaces.base_hf import ChatHF
 from textual import on, work
 from textual.app import App, ComposeResult
-from textual.widgets import Input, Header, Markdown, Footer
 from textual.containers import VerticalScroll
+from textual.widgets import Footer, Header, Input, Markdown
+from transformers.utils.logging import disable_progress_bar
+
+disable_progress_bar()
+
+# temp
+MODEL_ID = "microsoft/Phi-3.5-mini-instruct"
 
 
 def get_response():
@@ -15,16 +23,20 @@ def get_response():
     string = "¿En serio? ¡A mí también me gusta ver películas!"
     return string
 
+
 class Prompt(Markdown):
     pass
 
+
 class Response(Markdown):
     BORDER_TITLE = "Interact-LLM"
+
 
 class ChatApp(App):
     """
     Texttual app for chatting with llm
     """
+
     AUTO_FOCUS = "INPUT"
 
     CSS = """
@@ -45,11 +57,14 @@ class ChatApp(App):
         padding: 1 2 0 2;
     }
     """
-    
+
+    def on_mount(self) -> None:
+        self.model = ChatHF(model_id=MODEL_ID).load()
+
     def compose(self) -> ComposeResult:
         yield Header()
         with VerticalScroll(id="chat-view"):
-                yield Response("¿Hola quieres practicar conmigo?")
+            yield Response("¿Hola quieres practicar conmigo?")
         yield Input(placeholder="Escribe tu mensaje aquí")
         yield Footer()
 
@@ -67,12 +82,14 @@ class ChatApp(App):
         response_content = ""
         llm_response = get_response()
         for chunk in llm_response:
-            response_content += chunk
+            response_content += chunk  # add words in a "stream-like" way
             self.call_from_thread(response.update, response_content)
+
 
 def main():
     app = ChatApp()
     app.run()
+
 
 if __name__ == "__main__":
     main()
