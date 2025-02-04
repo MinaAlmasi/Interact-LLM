@@ -39,13 +39,13 @@ class ChatHF:
                 self.model_id, device_map=self.device_map if self.device_map else None
             )
 
-    def generate(self, chat: List[ChatMessage], max_new_tokens:int=200):
+    def generate(self, chat: List[ChatMessage], max_new_tokens: int = 200):
         ds = datetime.today().strftime("%Y-%m-%d")
         prompt = self.tokenizer.apply_chat_template(
             chat, tokenize=False, add_generation_prompt=True, date_string=ds
         )
 
-        # tokenized inputs and outputs 
+        # tokenized inputs and outputs
         token_inputs = self.tokenizer.encode(
             prompt, add_special_tokens=False, return_tensors="pt"
         )
@@ -54,7 +54,7 @@ class ChatHF:
         )
 
         # chat (decoded output)
-        response = self.tokenizer.decode((token_outputs[:, token_inputs.shape[1]:])[0]) 
+        response = self.tokenizer.decode((token_outputs[:, token_inputs.shape[1] :])[0])
 
         chat_message = ChatMessage(role="assistant", content=response)
 

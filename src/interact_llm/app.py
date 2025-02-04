@@ -25,7 +25,7 @@ def get_response():
     return string
 
 
-# classes for formatting 
+# classes for formatting
 class Prompt(Markdown):
     pass
 
@@ -88,7 +88,7 @@ class ChatApp(App):
 
         # replace weird <|im_end|> ()
         llm_response["content"] = llm_response["content"].replace("<|im_end|>", "")
-        
+
         for chunk in llm_response["content"]:
             response_content += chunk  # add words in a "stream-like" way
             self.call_from_thread(response.update, response_content)
