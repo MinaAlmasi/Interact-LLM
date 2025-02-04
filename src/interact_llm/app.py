@@ -1,10 +1,9 @@
 """
-Currently heavily based on
-https://textual.textualize.io/blog/2024/09/15/anatomy-of-a-textual-user-interface/#were-in-the-pipe-five-by-five
+Initial inspiration:https://textual.textualize.io/blog/2024/09/15/anatomy-of-a-textual-user-interface/#were-in-the-pipe-five-by-five
 """
 
 from interfaces.base_hf import ChatHF
-from interfaces.chat import ChatMessage
+from interfaces.chat import ChatMessage, ChatHistory
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll
@@ -17,7 +16,7 @@ disable_progress_bar()
 MODEL_ID = "BSC-LT/salamandra-2b-instruct"
 
 # classes for formatting
-class Prompt(Markdown):
+class UserMessage(Markdown):
     pass
 
 
@@ -33,7 +32,7 @@ class ChatApp(App):
     AUTO_FOCUS = "INPUT"
 
     CSS = """
-    Prompt {
+    UserMessage {
         background: $primary 10%;
         color: $text;
         margin: 1;        
@@ -50,10 +49,17 @@ class ChatApp(App):
         padding: 1 2 0 2;
     }
     """
+    def __init__(self, chat_history: ChatHistory = None):
+        super().__init__()
+        self.chat_history = chat_history if chat_history else ChatHistory(messages=[])
 
     def on_mount(self) -> None:
         self.model = ChatHF(model_id=MODEL_ID)
         self.model.load()
+
+    def update_chat_history(self, chat_message: ChatMessage) -> None:
+        """Update chat history with a single new message."""
+        self.chat_history.messages.append(chat_message)
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -63,27 +69,35 @@ class ChatApp(App):
         yield Footer()
 
     @on(Input.Submitted)
-    async def on_input(self, event: Input.Submitted) -> None:
+    async def on_input(self, user_message: Input.Submitted) -> None:
         chat_view = self.query_one("#chat-view")
-        event.input.clear()
-        await chat_view.mount(Prompt(event.value))
+        user_message.input.clear()
+        await chat_view.mount(UserMessage(user_message.value))
         await chat_view.mount(response := Response())
         response.anchor()
-        self.send_prompt(event.value, response)
+
+        self.get_model_response(user_message.value, response)
 
     @work(thread=True)
-    def send_prompt(self, prompt: str, response: Response) -> None:
+    def get_model_response(self, user_message: str, response: Response) -> list[ChatMessage]:
+        """
+        Displays model response to user message, updating chat history 
+        """
+        self.update_chat_history(ChatMessage(role="user", content=user_message))
+
+        model_response = self.model.generate(self.chat_history)
+
+        # replace weird <|im_end|>
+        model_response.content = model_response.content.replace("<|im_end|>", "")
+
+        # display in APP 
         response_content = ""
-        chat_messages = [ChatMessage(role="user", content=prompt)]
-        llm_response = self.model.generate(chat_messages)
-
-        # replace weird <|im_end|> ()
-        llm_response.content = llm_response.content.replace("<|im_end|>", "")
-
-        for chunk in llm_response.content:
+        for chunk in model_response.content:
             response_content += chunk  # add words in a "stream-like" way
             self.call_from_thread(response.update, response_content)
-
+        
+        # update history again with model response
+        self.update_chat_history(model_response)
 
 def main():
     app = ChatApp()
