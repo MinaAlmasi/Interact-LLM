@@ -3,8 +3,8 @@ Chat Model
 """
 
 from datetime import datetime
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -21,7 +21,7 @@ class ChatHF:
         model_id: str,
         device: Optional[str] = None,
         device_map: Optional[str] = None,
-        cache_dir: Optional[Path] = None 
+        cache_dir: Optional[Path] = None,
     ):
         self.model_id = model_id
         self.device = device
@@ -41,7 +41,7 @@ class ChatHF:
             self.model = AutoModelForCausalLM.from_pretrained(
                 self.model_id, device_map=self.device_map if self.device_map else None
             )
-            if self.device: 
+            if self.device:
                 self.model.to(self.device)
 
     def generate(self, chat: list[ChatMessage], max_new_tokens: int = 200):
