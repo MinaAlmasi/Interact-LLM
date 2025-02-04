@@ -3,7 +3,8 @@ Chat Model
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
+from pathlib import Path
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -20,12 +21,14 @@ class ChatHF:
         model_id: str,
         device: Optional[str] = None,
         device_map: Optional[str] = None,
+        cache_dir: Optional[Path] = None 
     ):
         self.model_id = model_id
-        self.tokenizer = None
-        self.model = None
         self.device = device
         self.device_map = device_map
+        self.cache_dir = cache_dir
+        self.tokenizer = None
+        self.model = None
 
     def load(self) -> None:
         """
@@ -38,14 +41,16 @@ class ChatHF:
             self.model = AutoModelForCausalLM.from_pretrained(
                 self.model_id, device_map=self.device_map if self.device_map else None
             )
+            if self.device: 
+                self.model.to(self.device)
 
-    def generate(self, chat: List[ChatMessage], max_new_tokens:int=200):
+    def generate(self, chat: list[ChatMessage], max_new_tokens: int = 200):
         ds = datetime.today().strftime("%Y-%m-%d")
         prompt = self.tokenizer.apply_chat_template(
             chat, tokenize=False, add_generation_prompt=True, date_string=ds
         )
 
-        # tokenized inputs and outputs 
+        # tokenized inputs and outputs
         token_inputs = self.tokenizer.encode(
             prompt, add_special_tokens=False, return_tensors="pt"
         )
@@ -54,7 +59,7 @@ class ChatHF:
         )
 
         # chat (decoded output)
-        response = self.tokenizer.decode((token_outputs[:, token_inputs.shape[1]:])[0]) 
+        response = self.tokenizer.decode((token_outputs[:, token_inputs.shape[1] :])[0])
 
         chat_message = ChatMessage(role="assistant", content=response)
 
