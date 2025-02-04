@@ -2,8 +2,10 @@
 Initial inspiration:https://textual.textualize.io/blog/2024/09/15/anatomy-of-a-textual-user-interface/#were-in-the-pipe-five-by-five
 """
 
+from pathlib import Path
+
 from interfaces.base_hf import ChatHF
-from interfaces.chat import ChatMessage, ChatHistory
+from interfaces.chat import ChatHistory, ChatMessage
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll
@@ -14,6 +16,8 @@ disable_progress_bar()
 
 # temp
 MODEL_ID = "BSC-LT/salamandra-2b-instruct"
+CACHE_DIR = Path(__file__).parents[3] / "models"  # consider making it an argparse
+
 
 # classes for formatting
 class UserMessage(Markdown):
@@ -49,12 +53,13 @@ class ChatApp(App):
         padding: 1 2 0 2;
     }
     """
+
     def __init__(self, chat_history: ChatHistory = None):
         super().__init__()
         self.chat_history = chat_history if chat_history else ChatHistory(messages=[])
 
     def on_mount(self) -> None:
-        self.model = ChatHF(model_id=MODEL_ID)
+        self.model = ChatHF(model_id=MODEL_ID, cache_dir=CACHE_DIR)
         self.model.load()
 
     def update_chat_history(self, chat_message: ChatMessage) -> None:
@@ -79,9 +84,9 @@ class ChatApp(App):
         self.get_model_response(user_message.value, response)
 
     @work(thread=True)
-    def get_model_response(self, user_message: str, response: Response) -> list[ChatMessage]:
+    def get_model_response(self, user_message: str, response: Response):
         """
-        Displays model response to user message, updating chat history 
+        Displays model response to user message, updating chat history
         """
         self.update_chat_history(ChatMessage(role="user", content=user_message))
 
@@ -90,14 +95,15 @@ class ChatApp(App):
         # replace weird <|im_end|>
         model_response.content = model_response.content.replace("<|im_end|>", "")
 
-        # display in APP 
+        # display in APP
         response_content = ""
         for chunk in model_response.content:
             response_content += chunk  # add words in a "stream-like" way
             self.call_from_thread(response.update, response_content)
-        
+
         # update history again with model response
         self.update_chat_history(model_response)
+
 
 def main():
     app = ChatApp()
